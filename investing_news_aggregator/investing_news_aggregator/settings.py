@@ -7,6 +7,7 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
+
 BOT_NAME = 'investing_news_aggregator'
 
 SPIDER_MODULES = ['investing_news_aggregator.spiders']
@@ -18,6 +19,7 @@ USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64; rv:48.0) Gecko/20100101 Firefox/48
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
+
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32

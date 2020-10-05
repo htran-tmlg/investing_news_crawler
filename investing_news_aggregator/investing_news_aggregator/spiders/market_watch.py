@@ -1,45 +1,33 @@
 from datetime import datetime
 import scrapy
-from scrapy.linkextractors import LinkExtractor
-from scrapy.spiders import Spider, Rule
-from scrapy.loader import ItemLoader
+
 from ..items import Article
 
 
-class MarketWatchSpider(Spider):
-    name = 'market_watch'
-    allowed_domains = ['quotes.toscrape.com', 'marketwatch.com']
+class MarketWatchSpider(scrapy.Spider):
+    name = 'marketwatch'
+    allowed_domains = ['marketwatch.com']
     start_urls = [
         'https://www.marketwatch.com/latest-news'
-        # 'http://quotes.toscrape.com'
     ]
 
-    # rules = (
-    #     Rule(LinkExtractor(allow=r'/page/d+'), callback='parse', follow=True),
-    # )
+    filename = name + '_' + datetime.now().date().strftime("%m%d%Y")
+    custom_settings = {"FEEDS": {f"results/{filename}.jl": {"format":"jl"}}}
 
     def parse(self, response):
-        # item = Article()
-        # quotes = response.xpath('//div[@class="quote"]')
-        # for quote in quotes:
-        #     item['title'] = quote.xpath('span[@class="text"]/text()').get()
-        #     yield item
+        item = Article()
+        headlines = response.xpath('//div[@class="element element--article "]')
+        for headline in headlines:
+            temp = headline.xpath('div[@class="article__content"]')
+            item['title'] = temp.xpath('h3/a/text()').get()
+            item['summary'] = temp.xpath('p/text()').get()
+            item['url'] = temp.xpath('h3/a/@href').get()
+            item['date_extracted'] = datetime.now()
+            item['thumbnail_url'] = headline.xpath('figure[@class="article__figure"]/a/img/@data-srcset').getall()
 
-        # url = response.xpath('//li[@class="next"]/a/@href').get()
-        # if url is not None:
-        #     yield response.follow(url, callback=self.parse)
-
-        if response.status == 200:
-            item = Article()
-            articles = response.xpath('//div[@class="collection__elements j-scrollElement"]')
-            for article in articles:
-                content = article.xpath('//div[@class="element element--article"]/div[@class="article__content"]')
-                item['url'] = content.xpath('//h3[@class="article__headline"]/a[@class="link"]/@href').getall()
-                item['title'] = content.xpath('//h3[@class="article__headline"]/a[@class="link"]/text()').getall()
-                item['summary'] = content.xpath('//p[@class="article__summary"]/text()').getall()
-                item['date_posted'] = content.xpath('//div[@class="article__details"]/span[@class="article__timestamp"]/@data-est').getall()
-                # item['date_extracted'] = datetime.now()
-                # item['words_count'] = response.xpath(f'//input[@id="sid"]/@value').get()
-                yield item
-        else:
-            self.logger.warning('No item received for %s', response.url)
+            # Somehow LOSE div[@class="article__details"] during the iteration through headlines eventhough the elements are static???
+            # item['date_posted'] = datetime.strptime(temp.xpath('div/span/@data-est').get(), '%Y-%m-%dT%H:%M:%S')
+            # item['author'] = temp.xpath('div/span[@class="article__author"]/text()').get().replace('by ', '')
+            yield item
+        
+        # "See More" to load more articles is javascript function trigger
